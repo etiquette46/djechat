@@ -1,56 +1,27 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - DJEsocials</title>
+    <title>Login | DJEsocials</title>
     <link rel="stylesheet" href="style.css">
 </head>
-<body style="display:flex; justify-content:center; align-items:center; height:100vh; text-align:center;">
-
-    <div class="card" style="width: 300px; animation: fadeIn 1s ease;">
-        <h1 style="color: #bb86fc;">DJEsocials</h1>
-        <p>Connect with the music.</p>
-        <button id="login-btn">Login with Google</button>
+<body style="display:flex; align-items:center; justify-content:center; height:100vh;">
+    <div class="card" style="text-align:center; width: 350px;">
+        <h1>DJEsocials</h1>
+        <p style="color:var(--text-dim)">Minimalist vibe for DJs & Creators</p>
+        <button id="google-login" style="width:100%; margin-top:1rem;">Sign in with Google</button>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
-        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
-        import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
-
-        const firebaseConfig = {
-            apiKey: "AIzaSyDTL2zEm3QrFPs8Mctnx889WH0DcM65nFw",
-            authDomain: "djechat-730a0.firebaseapp.com",
-            projectId: "djechat-730a0",
-            storageBucket: "djechat-730a0.firebasestorage.app",
-            messagingSenderId: "843688111797",
-            appId: "1:843688111797:web:adf9bf0b67f8b3f89e98fc",
-            measurementId: "G-LY8QLXN3SV"
-        };
-
+        import { getAuth, signInWithPopup, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
+        
+        const firebaseConfig = { apiKey: "AIzaSyDTL2zEm3QrFPs8Mctnx889WH0DcM65nFw", authDomain: "djechat-730a0.firebaseapp.com", projectId: "djechat-730a0", storageBucket: "djechat-730a0.firebasestorage.app", messagingSenderId: "843688111797", appId: "1:843688111797:web:adf9bf0b67f8b3f89e98fc" };
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
-        const db = getFirestore(app);
-        const provider = new GoogleAuthProvider();
 
-        document.getElementById('login-btn').addEventListener('click', () => {
-            signInWithPopup(auth, provider).then(async (result) => {
-                const user = result.user;
-                // Save user to database so they can be found in search
-                await setDoc(doc(db, "users", user.uid), {
-                    uid: user.uid,
-                    displayName: user.displayName,
-                    email: user.email,
-                    photoURL: user.photoURL
-                });
-                window.location.href = "index.html";
-            }).catch((error) => console.error(error));
-        });
-
-        onAuthStateChanged(auth, (user) => {
-            if (user) window.location.href = "index.html";
-        });
+        document.getElementById('google-login').onclick = () => {
+            signInWithPopup(auth, new GoogleAuthProvider()).then(() => window.location.href = 'index.html');
+        };
     </script>
 </body>
 </html>

@@ -1,25 +1,16 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <title>Friends - DJEsocials</title>
+    <title>Friends | DJEsocials</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <nav>
-        <h1>DJEsocials</h1>
-        <ul>
-            <li><a href="index.html">Home</a></li>
-            <li><a href="friends.html" style="color:var(--primary-purple)">Friends</a></li>
-            <li><a href="conversations.html">Conversations</a></li>
-            <li><a href="profile.html">Profile</a></li>
-        </ul>
-    </nav>
+    <nav><h1>DJEsocials</h1><ul><li><a href="index.html">Home</a></li><li><a href="friends.html" class="active">Friends</a></li><li><a href="conversations.html">Chats</a></li><li><a href="profile.html">Profile</a></li></ul></nav>
 
     <div class="container">
-        <h2>Find Friends</h2>
         <div class="card">
-            <input type="text" id="search-input" placeholder="Search by name...">
+            <h3>Add Friend by Nickname</h3>
+            <input type="text" id="search-nick" placeholder="Enter nickname (no @)...">
             <button id="search-btn">Search</button>
         </div>
         <div id="results"></div>
@@ -27,43 +18,37 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
-        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
-        import { getFirestore, collection, getDocs, query, where } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+        import { getAuth } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
+        import { getFirestore, collection, query, where, getDocs, updateDoc, doc, arrayUnion } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 
         const firebaseConfig = { apiKey: "AIzaSyDTL2zEm3QrFPs8Mctnx889WH0DcM65nFw", authDomain: "djechat-730a0.firebaseapp.com", projectId: "djechat-730a0", storageBucket: "djechat-730a0.firebasestorage.app", messagingSenderId: "843688111797", appId: "1:843688111797:web:adf9bf0b67f8b3f89e98fc" };
-
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        onAuthStateChanged(auth, (user) => {
-            if (!user) window.location.href = "login.html";
-        });
-
-        document.getElementById('search-btn').addEventListener('click', async () => {
-            const name = document.getElementById('search-input').value;
-            const resultsDiv = document.getElementById('results');
-            resultsDiv.innerHTML = "Searching...";
-
-            // Simple search: User needs to type exact name or we fetch all (Firestore doesn't do partial text search natively well)
-            // For demo: fetching all users and filtering in JS (Use with caution in production)
-            const snapshot = await getDocs(collection(db, "users"));
-            resultsDiv.innerHTML = "";
+        document.getElementById('search-btn').onclick = async () => {
+            const nick = document.getElementById('search-nick').value.trim().toLowerCase();
+            const q = query(collection(db, "users"), where("nickname", "==", nick));
+            const snap = await getDocs(q);
             
-            snapshot.forEach(doc => {
-                const user = doc.data();
-                if (user.displayName.toLowerCase().includes(name.toLowerCase())) {
-                    resultsDiv.innerHTML += `
-                        <div class="card" style="display:flex; justify-content:space-between; align-items:center;">
-                            <b>${user.displayName}</b>
-                            <button onclick="alert('Friend Request Sent!')">Add Friend</button>
-                        </div>
-                    `;
-                }
+            const res = document.getElementById('results');
+            res.innerHTML = "";
+            if (snap.empty) return res.innerHTML = "No user found.";
+
+            snap.forEach(d => {
+                const u = d.data();
+                res.innerHTML += `
+                    <div class="card" style="display:flex; justify-content:space-between;">
+                        <b>@${u.nickname}</b>
+                        <button onclick="addF('${u.uid}')">Add Friend</button>
+                    </div>`;
             });
-            
-            if(resultsDiv.innerHTML === "") resultsDiv.innerHTML = "<p>No users found.</p>";
-        });
+        };
+
+        window.addF = async (uid) => {
+            await updateDoc(doc(db, "users", auth.currentUser.uid), { friends: arrayUnion(uid) });
+            alert("Friend added!");
+        };
     </script>
 </body>
 </html>

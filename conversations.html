@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Chats - DJEsocials</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <nav>
+        <h1>DJEsocials</h1>
+        <ul>
+            <li><a href="index.html">Home</a></li>
+            <li><a href="friends.html">Friends</a></li>
+            <li><a href="conversations.html" style="color:var(--primary-purple)">Conversations</a></li>
+            <li><a href="profile.html">Profile</a></li>
+        </ul>
+    </nav>
+
+    <div class="container chat-container">
+        <div class="chat-list card">
+            <button id="new-chat-btn" style="width:100%; margin-bottom:10px;">+ New Group</button>
+            <div id="chats-list-content"></div>
+        </div>
+
+        <div class="chat-window">
+            <div style="padding:15px; border-bottom:1px solid #333; font-weight:bold;" id="chat-header">Select a chat</div>
+            <div class="messages" id="messages-box"></div>
+            <div style="padding:10px; display:flex; gap:10px; background:#252525;">
+                <input type="text" id="msg-input" placeholder="Type..." style="margin:0;">
+                <button id="send-btn">Send</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
+        import { getFirestore, collection, addDoc, query, where, onSnapshot, orderBy, doc, updateDoc } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+
+        const firebaseConfig = { apiKey: "AIzaSyDTL2zEm3QrFPs8Mctnx889WH0DcM65nFw", authDomain: "djechat-730a0.firebaseapp.com", projectId: "djechat-730a0", storageBucket: "djechat-730a0.firebasestorage.app", messagingSenderId: "843688111797", appId: "1:843688111797:web:adf9bf0b67f8b3f89e98fc" };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        let currentUser = null;
+        let currentChatId = null;
+
+        onAuthStateChanged(auth, (user) => {
+            if (!user) window.location.href = "login.html";
+            currentUser = user;
+            loadChats();
+        });
+
+        // New Group
+        document.getElementById('new-chat-btn').addEventListener('click', async () => {
+            const name = prompt("Group Name:");
+            if (!name) return;
+            await addDoc(collection(db, "chats"), {
+                name: name,
+                members: [currentUser.uid], // In real app, you'd add selected friend IDs here
+                lastMessage: "Chat created",
+                createdAt: new Date()
+            });
+        });
+
+        // Load List of Chats
+        function loadChats() {
+            const q = query(collection(db, "chats"), where("members", "array-contains", currentUser.uid));
+            onSnapshot(q, (snapshot) => {
+                const list = document.getElementById('chats-list-content');
+                list.innerHTML = "";
+                snapshot.forEach(docSnap => {
+                    const chat = docSnap.data();
+                    const div = document.createElement('div');
+                    div.style.padding = "10px";
+                    div.style.borderBottom = "1px solid #333";
+                    div.style.cursor = "pointer";
+                    div.innerHTML = `<b>${chat.name}</b><br><small style="color:#888">${chat.lastMessage}</small>`;
+                    div.addEventListener('click', () => openChat(docSnap.id, chat.name));
+                    list.appendChild(div);
+                });
+            });
+        }
+
+        // Open specific chat
+        function openChat(chatId, chatName) {
+            currentChatId = chatId;
+            document.getElementById('chat-header').innerText = chatName;
+            
+            const q = query(collection(db, "chats", chatId, "messages"), orderBy("timestamp", "asc"));
+            onSnapshot(q, (snapshot) => {
+                const box = document.getElementById('messages-box');
+                box.innerHTML = "";
+                snapshot.forEach(docSnap => {
+                    const msg = docSnap.data();
+                    const isSelf = msg.uid === currentUser.uid;
+                    box.innerHTML += `<div class="msg ${isSelf ? 'self' : ''}">${msg.text}</div>`;
+                });
+                box.scrollTop = box.scrollHeight;
+            });
+        }
+
+        // Send Message
+        document.getElementById('send-btn').addEventListener('click', async () => {
+            const text = document.getElementById('msg-input').value;
+            if (!text || !currentChatId) return;
+
+            await addDoc(collection(db, "chats", currentChatId, "messages"), {
+                text: text,
+                uid: currentUser.uid,
+                sender: currentUser.displayName,
+                timestamp: new Date()
+            });
+
+            await updateDoc(doc(db, "chats", currentChatId), { lastMessage: text });
+            document.getElementById('msg-input').value = "";
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Profile - DJEsocials</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <nav>
+        <h1>DJEsocials</h1>
+        <ul>
+            <li><a href="index.html">Home</a></li>
+            <li><a href="friends.html">Friends</a></li>
+            <li><a href="conversations.html">Conversations</a></li>
+            <li><a href="profile.html" style="color:var(--primary-purple)">Profile</a></li>
+        </ul>
+    </nav>
+
+    <div class="container" style="text-align:center;">
+        <div class="card">
+            <img id="profile-pic" src="" style="width:100px; height:100px; border-radius:50%; border:3px solid #bb86fc; margin-bottom:15px;">
+            <h2 id="display-name">Loading...</h2>
+            <p id="email-display" style="color:#888;">...</p>
+            
+            <hr style="border-color:#333; margin:20px 0;">
+            
+            <input type="text" id="new-name" placeholder="New Display Name" style="width:200px;">
+            <button id="update-btn">Update Name</button>
+            
+            <br><br>
+            <button id="logout-btn" style="background:#cf6679; color:white;">Log Out</button>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+        import { getAuth, signOut, updateProfile, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
+        import { getFirestore, doc, updateDoc } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+
+        const firebaseConfig = { apiKey: "AIzaSyDTL2zEm3QrFPs8Mctnx889WH0DcM65nFw", authDomain: "djechat-730a0.firebaseapp.com", projectId: "djechat-730a0", storageBucket: "djechat-730a0.firebasestorage.app", messagingSenderId: "843688111797", appId: "1:843688111797:web:adf9bf0b67f8b3f89e98fc" };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        let currentUser = null;
+
+        onAuthStateChanged(auth, (user) => {
+            if (!user) window.location.href = "login.html";
+            currentUser = user;
+            
+            document.getElementById('display-name').innerText = user.displayName;
+            document.getElementById('email-display').innerText = user.email;
+            document.getElementById('profile-pic').src = user.photoURL || 'https://via.placeholder.com/100';
+        });
+
+        document.getElementById('update-btn').addEventListener('click', async () => {
+            const newName = document.getElementById('new-name').value;
+            if(newName) {
+                await updateProfile(currentUser, { displayName: newName });
+                // Also update the public user doc
+                await updateDoc(doc(db, "users", currentUser.uid), { displayName: newName });
+                alert("Profile Updated!");
+                location.reload();
+            }
+        });
+
+        document.getElementById('logout-btn').addEventListener('click', () => {
+            signOut(auth).then(() => window.location.href = "login.html");
+        });
+    </script>
+</body>
+</html>
